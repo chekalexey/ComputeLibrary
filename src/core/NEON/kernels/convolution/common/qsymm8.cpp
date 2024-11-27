@@ -67,8 +67,7 @@ QSymm8RescaleParams QSymm8RescaleParams::make_rescale_params(
   int64_t shift = static_cast<int64_t>(shiftf);
   int64_t mult = static_cast<int64_t>(multf);
 
-  if (mult == (1ll << 31))
-  {
+  if (mult == (1ll << 31)){
     mult /= 2;
     shift--;
   }
@@ -104,24 +103,21 @@ QSymm8PerChannelRescaleParams QSymm8PerChannelRescaleParams::make_rescale_params
   const QSymm8PerChannelParams& weight_quant,
   const QSymm8PerChannelParams& input_quant,
   const QSymm8PerChannelParams& output_quant
-)
-{
-    std::vector<int32_t> shifts;
-    std::vector<int32_t> mults;
-    std::vector<float> rescales;
+){
+    std::vector<int32_t> sh;
+    std::vector<int32_t> ms;
+    std::vector<float> rs;
 
-    for(size_t s = 0; s< input_quant.scales.size(); s++)
-    {
-          // Based on the gemmlowp approach: https://github.com/google/gemmlowp/blob/master/doc/quantization_example.cc
-          const float rescale = weight_quant.scales[s] * input_quant.scales[s] / output_quant.scales[s];
+    for(size_t i = 0; i < input_quant.scales.size(); i++){
+          const float rescale = weight_quant.scales[i] * input_quant.scales[i] / output_quant.scales[i];
+
           const float shiftf = round(log2(0.5f / rescale));
-          const float multf = exp2(31.0f + shiftf)*rescale;
+          const float multf = exp2(31.0f + shiftf) * rescale;
 
           int64_t shift = static_cast<int64_t>(shiftf);
           int64_t mult = static_cast<int64_t>(multf);
 
-          if (mult == (1ll << 31))
-          {
+          if (mult == (1ll << 31)){
             mult /= 2;
             shift--;
           }
@@ -129,13 +125,11 @@ QSymm8PerChannelRescaleParams QSymm8PerChannelRescaleParams::make_rescale_params
           assert(shift >= 0);
           assert(mult <= std::numeric_limits<int32_t>::max());
 
-          shifts.push_back(static_cast<int32_t>(shift));
-          mults.push_back(static_cast<int32_t>(mult));
-          rescales.push_back(rescale);
+          sh.push_back(static_cast<int32_t>(shift));
+          ms.push_back(static_cast<int32_t>(mult));
+          rs.push_back(rescale);
     }
-
-  return QSymm8PerChannelRescaleParams(shifts, mults, rescales);
-
+  return QSymm8PerChannelRescaleParams(sh, ms, rs);
 }
 
 QSymm8PerChannelRescaleParams QSymm8PerChannelRescaleParams::make_rescale_params(
@@ -144,22 +138,19 @@ QSymm8PerChannelRescaleParams QSymm8PerChannelRescaleParams::make_rescale_params
   const qasymm8::QAsymm8Params& output_quant
 )
 {
-    std::vector<int32_t> shifts;
-    std::vector<int32_t> mults;
-    std::vector<float> rescales;
+    std::vector<int32_t> sh;
+    std::vector<int32_t> ms;
+    std::vector<float> rs;
 
-    for(size_t s = 0; s< weight_quant.scales.size(); s++)
-    {
-          // Based on the gemmlowp approach: https://github.com/google/gemmlowp/blob/master/doc/quantization_example.cc
-          const float rescale = weight_quant.scales[s] * input_quant.scale / output_quant.scale;
+    for(size_t i = 0; i < weight_quant.scales.size(); i++){
+          const float rescale = input_quant.scale * weight_quant.scales[i] / output_quant.scale;
           const float shiftf = round(log2(0.5f / rescale));
-          const float multf = exp2(31.0f + shiftf)*rescale;
+          const float multf = exp2(shiftf + 31.0f ) * rescale;
 
           int64_t shift = static_cast<int64_t>(shiftf);
           int64_t mult = static_cast<int64_t>(multf);
 
-          if (mult == (1ll << 31))
-          {
+          if (mult == (1ll << 31)){
             mult /= 2;
             shift--;
           }
@@ -167,17 +158,15 @@ QSymm8PerChannelRescaleParams QSymm8PerChannelRescaleParams::make_rescale_params
           assert(shift >= 0);
           assert(mult <= std::numeric_limits<int32_t>::max());
 
-          shifts.push_back(static_cast<int32_t>(shift));
-          mults.push_back(static_cast<int32_t>(mult));
-          rescales.push_back(rescale);
+          sh.push_back(static_cast<int32_t>(shift));
+          ms.push_back(static_cast<int32_t>(mult));
+          rs.push_back(rescale);
     }
-
-  return QSymm8PerChannelRescaleParams(shifts, mults, rescales);
-
+  return QSymm8PerChannelRescaleParams(sh, ms, rs);
 }
 
-QSymm8PerChannelRescaleParams::QSymm8PerChannelRescaleParams(std::vector<int32_t>& shifts, std::vector<int32_t>& multipliers, std::vector<float>& rescales)
-  : shifts(shifts), multipliers(multipliers), rescales(rescales)
+QSymm8PerChannelRescaleParams::QSymm8PerChannelRescaleParams(std::vector<int32_t>& sh, std::vector<int32_t>& multipliers, std::vector<float>& rs)
+  : sh(sh), multipliers(multipliers), rs(rs)
 {
 }
 
